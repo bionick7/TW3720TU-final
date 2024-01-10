@@ -1,11 +1,4 @@
-#include <cmath>
-#include <initializer_list>
-#include <iostream>
-#include <list>
-#include <memory>
-#include <random>
-#include <stdexcept>
-#include <utility>     
+#include "general_includes.hpp"
 
 template <typename T>
 class Matrix

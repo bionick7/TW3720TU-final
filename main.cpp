@@ -1,15 +1,4 @@
-#include <cmath>
-#include <initializer_list>
-#include <iostream>
-#include <list>
-#include <memory>
-#include <random>
-#include <stdexcept>
-#include <utility>     
-
-#include "matrix.hpp"
 #include "layer.hpp"
-#include "net.hpp"
 
 // Function to calculate the loss
 template <typename T>
