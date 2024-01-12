@@ -32,7 +32,18 @@ int main(int argc, char* argv[])
 {
     // Your training and testing of the Net class starts here
 
-    printf("Hello world!\n");
+    try {
+        matrixTests();
+
+        // Put other unit tests here
+
+    } catch (const std::exception& e) {
+        
+        printf("%s\n", e.what());
+        return 1;
+    }
+
+    printf("Tests sucessfull\n");
 
     return 0;
 }

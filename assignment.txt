@@ -1,0 +1,359 @@
+Description
+DISCLAIMER
+
+    The preliminary Spec Tests that you are able to run only test that your code compiles and provides an indication about how well your code can be tested with the complete Spec Test. The preliminary Spec Tests DO NOT TEST the correct functioning of your code.
+
+    The maximum score you can obtain with the preliminary Spec Test is 10. If you obtain this maximum score it indicates that your code is likely compatible with the complete Spec Test. It is your responsibility to test that your code is correct.
+
+    After the deadline, your code will be tested with the complete Spec Test which does test the correct functioning of your code. The complete Spec Test will determine your grade for this assignment.
+
+    Please refrain from using asserts in this implementation, as they can cause problems when running the Spec Test. You can use exceptions instead.
+
+General problem description
+
+You will write C++ code to build your own fully connected neural network with linear and non-linear activation layers. Neural networks are mostly used to solve complicated problems, however this assignment focuses on solving the XOR classification problem. That is, given two binary inputs x1
+and x2
+
+decide whether they have different values or not. The XOR function is defined as below:
+x1
+	x2
+	y
+0 	0 	0
+0 	1 	1
+1 	0 	1
+1 	1 	0
+
+Table 1: XOR values
+
+In itself, the XOR classification problem seems to be very simple. However, due to its non-linear behaviour, it cannot be solved by linear classifiers. The goal of this project is to implement your own neural network and let it learn to predict the correct class y
+for possible combinations of inputs x1 and x2
+
+.
+Implementation
+
+You will first write the basic building block, the Matrix class. Next, you will make the classes for the different layers of the neural network (namely Layer, Linear, and ReLU) and combine them in the Net class. You will finally write functions to determine the loss and accuracy, used in the training loop that you will create in the main function of your code.
+
+Note: All integer variables should have type int. Do not use std::size_t or other types since this might lead to problems with our Spec Tests.
+Matrix
+
+    Create the class
+
+    template <typename T> 
+    class Matrix {...};
+
+that represents a dense matrix, whereby the matrix elements are of type T.
+
+Hint: Decide yourself if you want to use containers from the C++ standard library or a dynamically allocated array to store the matrix data. A common practice to store 2-dimensional data in a flat (aka 1-dimensional) array is to map 2d indices to 1d indices using row-major ordering
+
+data[ncols*irow+icol]
+
+The matrix class should provide the following functionality:
+
+    A default constructor.
+
+    A constructor with the signature Matrix(int rows, int cols) that creates a matrix with dimension rows×
+
+cols and initializes it with zeros.
+
+A constructor with the signature Matrix(int rows, int cols, const std::initialize_list<T>& list) that creates a matrix with dimension rows×
+cols and initializes it with the values given by list. We assume row-wise ordering, that is, the first entry in list corresponds to matrix position A[0,0], the second value to A[0,1], etcetera. This constructor should throw an exception of the length of list does not match the matrix dimension rows×
+
+cols.
+
+A copy constructor and a move constructor from another matrix.
+
+A destructor.
+
+A copy assignment operator and a move assignment operator from another matrix.
+
+An access operator operator[] that returns a reference to the matrix entry (i,j)
+
+. This operator should throw an exception if the requested entry exceeds the matrix dimensions. The operator must have the following signature:
+
+T& operator[](const std::pair<int, int>& ij) {...}
+
+A constant access operator operator[] that returns a constant reference to the matrix entry (i,j)
+
+. This operator should throw an exception if the requested entry exceeds the matrix dimensions. The operator must have the following signature:
+
+const T& operator[](const std::pair<int, int>& ij) const {...}
+
+An arithmetic operator operator* between a matrix and a scalar that implements the multiplication of the matrix with a scalar value. The operator must have the following signature (here defined inside the Matrix class but it is also possible to implement this operator outside the Matrix class):
+
+template<typename U>
+Matrix<typename std::common_type<T,U>::type> operator*(U x) const {...}
+
+An arithmetic operator operator* between two matrices that implements the multiplication of a matrix with another matrix. If the matrices are not of compatible size, it should throw an exception. The operator must have the following signature:
+
+template<typename U>
+Matrix<typename std::common_type<T,U>::type> operator*(const Matrix<U>& B) const {...}
+
+An arithmetic operator operator+ between two matrices that implements the addition of two matrices. If the matrices are not of compatible size, it should throw an exception. There is one exception to this rule. In the neural network we need to add the bias matrix (1 row and cols columns) to the matrix of weights (rows rows and cols columns) in a row-by-row fashion. This operator should take care of this special case. The operator must have the following signature:
+
+template<typename U>
+Matrix<typename std::common_type<T,U>::type> operator+(const Matrix<U>& B) const {...}
+
+An arithmetic operator operator- between two matrices that implements a matrix subtraction. If the matrices are not of compatible size, it should throw an exception. There is one exception to this rule. In the neural network we need to subtract the bias matrix (1 row and cols columns) from the matrix of weights (rows rows and cols columns) in a row-by-row fashion. This operator should take care of this special case. The operator must have the following signature:
+
+template<typename U>
+Matrix<typename std::common_type<T,U>::type> operator-(const Matrix<U>& B) const {...}
+
+A transpose method that returns the transpose of the matrix. The function must have the following signature:
+
+Matrix transpose() const {...}
+
+Functions
+
+int getRows() const {...}
+int getCols() const {...}
+
+        that return the number of rows and columns, respectively.
+
+Layers
+
+    Create the abstract class Layer, which is the base class of the other layer classes (Linear and ReLU)
+
+    template<typename T>
+    class Layer {...};
+
+The Layer class should provide the following functionality:
+
+    A virtual forward function. The function must have the following signature:
+
+    virtual Matrix<T> forward(const Matrix<T>& x) = 0;
+
+A virtual backward function. The function must have the following signature:
+
+virtual Matrix<T> backward(const Matrix<T>& dy) = 0;
+
+Create the class Linear, which is derived from the Layer class:
+
+template<typename T>
+class Linear: public Layer<T> {...};
+
+The Linear class must provide the following functionality:
+
+    A constructor that accepts the in_features and out_features of the layer and the number of samples (n_samples), and stores them internally. It should also accept a seed parameter which will be explained below. The constructor must have the following signature:
+
+    Linear(int in_features, int out_features, int n_samples, int seed) {...}
+
+The constructor should create and initialize the bias, weights, bias gradients, weights gradients and cache matrices, that have the following shapes and signature:
+	Number of rows 	Number of columns 	Initial value
+Cache 	n_samples 	in_features 	zeros
+Bias 	1 	out_features 	uniform distribution
+Weights 	in_features 	out_features 	normal distribution
+Bias gradients 	1 	out_features 	zeros
+Weights gradients 	in_features 	out_features 	zeros
+
+Consider the following code snippet as an example of how to use the constructor to initialize a Linear layer object with 2 in_features, 3 out_features, 4 n_samples, a seed of 1:
+
+Linear<double> layer(2, 3, 4, 1);
+
+Lastly, the constructor should make sure that the bias and weights matrices are initialized with random weights. For the bias matrix, we sample from a uniform distribution with a mean of zero and a standard deviation of 1.0. For the weights matrix, we sample from a normal distribution with a mean of zero and a standard deviation of 1.0. You can make use of the default random engine from the C++ standard library. To make the results reproducable and testable, we initialize the default random engine with the seed value:
+
+#include <random>
+...
+std::default_random_engine        generator(seed);
+std::normal_distribution<T>       distribution_normal(0.0, 1.0);
+std::uniform_real_distribution<T> distribution_uniform(0.0, 1.0);
+
+Once created, you can draw an arbitrary number of random values from these distributions as follows:
+
+for (int i=0; i<rows; ++i) {
+  for (int j=0; j<cols; ++j) {
+     weights[{i,j}] = distribution_normal(generator);
+  }
+}
+
+A destructor.
+
+A forward function, which is defined as y=x∗w+b
+, where w is the weights matrix and b
+
+is the bias matrix. The function must have the following signature:
+
+virtual Matrix<T> forward(const Matrix<T>& x) override final {...}
+
+Also, we would like to store the input of the forward function in the cache matrix, as we need it to compute the gradient in the backward pass. Therefore, we store it in the forward pass, so we don’t have to compute it again.
+
+A backward function, which needs to return a downstream gradient.
+
+Backpropagation is an efficient algorithm to calculate the gradients of the loss with respect to the trainable parameters in our network. The gradient is used to update the trainable parameters to minimize the loss (see below).
+
+The downstream gradient of a layer is simply its upstream gradient times the local gradient of its output with respect to its input.
+
+The gradients w.r.t. weights and bias can be calculated using the chain rule:
+
+dLdwdLdb=dLdy∗dydw,=dLdy∗dydb.
+
+Here, dLdy
+
+is the upstream gradient, i.e. the gradient flowing from the deeper layer into the current layer. The upstream gradient will be the input variable in the backward function. The other two terms are the local gradients (the bias gradients and weights gradients) and will also be computed inside the backward function:
+
+dLdwdydb=x∗dLdy,=1.
+
+So, the downstream gradient that needs to be returned is:
+
+dLdx=dLdy∗w
+
+Hint: This is where the tranpose function will be used. The backward function must have the following signature:
+
+virtual Matrix<T> backward(const Matrix<T>& dy) override final {...}
+
+An optimize function, that updates the weights and bias matrices using their respective gradients and the learning rate lr
+
+.
+
+wb:=w−dLdw∗lr:=b−dLdb∗lr
+
+The function must have the following signature:
+
+void optimize(T learning_rate) {...}
+
+Create the class ReLU, which is derived from the Layer class. We cannot use only Linear layers to solve the XOR classification problem, but we should use non-linearities in combination with Linear layers. This way, the network can learn non-linear functions.
+
+template<typename T>
+class ReLU: public Layer<T> {...};
+
+The ReLU class must provide the following functionality:
+
+    A constructor that accepts the in_features, out_features of the layer and number of samples (n_samples) and stores them internally. Additionally, it should initialize the cache matrix. The constructor must have the following signature:
+
+    ReLU(int in_features, int out_features, int n_samples) {...}
+
+Consider the following code snippet as an example of how to initialize the ReLU layer with 2 in_features, 2 out_features and 4 n_samples:
+
+ReLU<double> layer(2, 3, 4);
+
+Note that in_features and out_features must be the same since ReLU is not a layer in the classical sense but applies the ReLu function (see below) element-wise to each input.
+A destructor
+
+A forward function. The ReLU forward function is defined as follows:
+
+ReLU(x)=max(0,x)
+
+The function must have the following signature:
+
+virtual Matrix<T> forward(const Matrix<T>& x) override final {...}
+
+A backward function. You should be able to derive the derivative of the ReLU function yourself. The function must have the following signature:
+
+virtual Matrix<T> backward(const Matrix<T>& dy) override final {...}
+
+Net
+
+The Net class is used to stack multiple layers on each other, so that we can use the forward and backward functions on all layers. Here, we consider a neural network consisting of 3 layers; a Linear layer of size (in_features, hidden_dim), followed by a ReLU layer of size (hidden_dim, hidden_dim) and finally a Linear layer of size (hidden_dim, out_features).
+
+    Create the class
+
+    template <typename T> 
+    class Net {...};
+
+It should provide the following functionalities:
+
+    A constructor that accepts the dimensions of the layers and the number of samples, and initializes all the layers of the neural network. The constructor must have the following signature:
+
+    Net(int in_features, int hidden_dim, int out_features, int n_samples, int seed) {...}
+
+The seed value should be passed to the constructor of the Linear layer.
+
+Consider the following code snippet as an example of how to initialize the network with 2 in_features, 5 hidden_dim, 3 out_features, 4 n_samples and a seed of 1
+
+Net<double> net(2, 5, 3, 4, 1);
+
+A destructor
+
+A forward function that performs the forward function of all the layers on the input and returns the result. The function must have the following signature:
+
+Matrix<T> forward(const Matrix<T>& x) {...}
+
+A backward function that performs the backward function of all the layers on the input and returns the result. The function must have the following signature:
+
+Matrix<T> backward(const Matrix<T>& dy) {...}
+
+An optimize function that updates the weights and biases of all trainable layers. The function must have the following signature:
+
+void optimize(T learning_rate) {...}
+
+MSE
+
+Before we implement the training loop, we need to choose a loss function that should be minimized by the network. In this case, we will use the MSE loss function, which is defined as:
+
+MSE(ytrue,ypred)=1n∗∑i=1n(yipred−yitrue)2,
+
+where
+
+ytrue=(y1true,y2true,…,yntrue)⊤
+
+are the true class labels and
+
+ypred=(y1pred,y2pred,…,ynpred)⊤
+
+are the predicted class labels. We will use the one-hot encoded notation for the class labels. This will be explained in more detail below. Finally, n
+is the number of samples, that is, the total number of entries in ytrue and ypred
+
+, respectively.
+
+    Implement the loss function as defined above, that returns the loss when we input the true class labels and the predicted class labels. The function must have the following signature:
+
+    template <typename T>
+    T MSEloss(const Matrix<T>& y_true, const Matrix<T>& y_pred) {...}
+
+Hint: In our implementation y_true and y_pred are passed as matrices so that n=rows×
+
+cols.
+Implement a function that calculates the gradient of the loss with respect to the predicted classes. You should be able to derive the derivative yourself from the formula above. The function must have the following signature:
+
+template <typename T>
+Matrix<T> MSEgrad(const Matrix<T>& y_true, const Matrix<T>& y_pred) {...}
+
+Accuracy
+
+To calculate the accuracy of our results, we use the argmax function to determine which label was determined by the neural network or is considered correct. By counting the amount of similarities we can determine the accuracy of the network.
+
+    Implement an argmax function that checks which of the elements of each row is highest and returns the index number of the highest element for every element in the matrix. It should return a Matrix consisting of one row and multiple columns. The function must have the following signature:
+
+    template <typename T>
+    Matrix<T> argmax(const Matrix<T>& y) {...}
+
+Implement the get_accuracy function that calculates for both outcomes (for the predicted classes and actual classes) the argmax and calculates the accuracy (range 0−1 not 0%−100%) from this. The function must have the following signature:
+
+template <typename T>
+T get_accuracy(const Matrix<T>& y_true, const Matrix<T>& y_pred) {...}
+
+Training (in the main function)
+
+Next, we implement the training loop. First we want to set some parameters:
+
+    learning_rate = 0.0005,
+    optimizer_steps = 100,
+    seed = 1.
+
+We initialize xxor
+as given in Table 1 and initialize yxor
+
+one-hot encoded, resulting in:
+
+xxor=⎛⎝⎜⎜⎜00110101⎞⎠⎟⎟⎟yxor=⎛⎝⎜⎜⎜10010110⎞⎠⎟⎟⎟
+
+The MSE loss (see above) is therefore computed over n=4
+
+samples.
+
+Lastly, we initialize the network dimensions as:
+
+    in_features = 2,
+    hidden_dim = 100,
+    out_features = 2.
+
+Optionally, you can make lists to store the losses and accuracies after each optimizer step, to inspect the result afterwards.
+
+Then, for each optimizer step, we do:
+
+    Feed the training sample to the network (perform the forward step)
+    Compare the prediction against the labels (compute the loss and gradients of the loss)
+    Use the gradients of the loss in the backward step
+    Update the weights and biases of the network (optimizer step)
+    Calculate the accuracy
+
+You will see that the loss decreases and the network learns to predict with perfect accuracy!
