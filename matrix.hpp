@@ -219,7 +219,7 @@ private:
     }
 
     // asserts if index is inside of bounds
-    void _assertInside(int row_index, int column_index) {
+    void _assertInside(int row_index, int column_index) const {
         if (row_index >= rows || column_index >= columns) {
             std::stringstream error_message;
             error_message << "Tried to access (" << row_index << " x " << column_index 

@@ -34,6 +34,7 @@ int main(int argc, char* argv[])
 
     try {
         matrixTests();
+        layerTests();
 
         // Put other unit tests here
 
