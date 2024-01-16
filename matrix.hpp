@@ -79,6 +79,19 @@ public:
         return *this;
     }
 
+    // /= operator
+    Matrix<T>& operator/=(const T& scalar) {
+        if (scalar == 0) {
+            throw std::domain_error("Division by zero is not allowed.");
+        }
+
+        for (int i = 0; i < rows * columns; i++) {
+            elements[i] /= scalar;
+        }
+
+        return *this;
+    }
+
     T& operator[](const std::pair<int, int>& ij) {
         _assertInside(ij.first, ij.second);
         return elements[ij.first * columns + ij.second];
@@ -179,24 +192,37 @@ public:
         return columns;
     }
 
-    // Debugging methods -- not asked for, but usefull
+    T sum() const {
+        T result = 0;
+        for (int i = 0; i < rows * columns; ++i) {
+            result += elements[i];
+        }
+        return result;
+    }
 
-    void inspect() const {
-        if (rows*columns == 0) {
+    // Debugging methods -- not asked for, but usefull
+    void inspect(bool printData = false) const {
+        if (rows * columns == 0) {
             std::cout << " [ ]";
             return;
         }
-        std::cout << " [";
-        std::cout << elements[0];
-        for(int i=1; i < rows*columns; i++) {
-            if (i % columns == 0) {
-                std::cout << "\n  " << elements[i];
-            } else {
-                std::cout << ",  " << elements[i];
+
+        std::cout << "Matrix Size: " << rows << "x" << columns << std::endl;
+
+        if (printData) {
+            std::cout << " [";
+            std::cout << elements[0];
+            for (int i = 1; i < rows * columns; i++) {
+                if (i % columns == 0) {
+                    std::cout << "\n  " << elements[i];
+                } else {
+                    std::cout << ",  " << elements[i];
+                }
             }
-        }
-        std::cout << "]" << std::endl;
+            std::cout << "]" << std::endl;
+        };
     }
+
 
 private:
 
@@ -289,21 +315,21 @@ void matrixTests() {
 
     // 0.0 1.1
     // 1.1 0.0
-    auto a = Matrix(2, 2, {0.0, 1.1, 1.1, 0.0});
+    auto a = Matrix<double>(2, 2, {0.0, 1.1, 1.1, 0.0});
 
-    auto bias_3 = Matrix(1, 3, {1, 2, 3});
+    auto bias_3 = Matrix<double>(1, 3, {1, 2, 3});
 
     // 0.0 1.1
     //-2.1 1.0
-    auto b = Matrix(2, 2, {0.0, 1.1, -2.1, 1.0});
+    auto b = Matrix<double>(2, 2, {0.0, 1.1, -2.1, 1.0});
     auto c = Matrix<double>(3, 3);
     // 0.0 1.1 5.0
     //-2.1 1.0 0.0
-    auto d = Matrix(2, 3, {0.0, 1.1, 5.0, -2.1, 1.0, 0.0});
+    auto d = Matrix<double>(2, 3, {0.0, 1.1, 5.0, -2.1, 1.0, 0.0});
     //-2.31  1.1   0.0
     //-2.1 -1.31 -10.5
-    auto bxd_expected = Matrix(2, 3, {-2.31, 1.1, 0.0, -2.1, -1.31, -10.5});
-    auto a_plus_b_expected = Matrix(2, 2, {0.0, 2.2, -1.0, 0.0});
+    auto bxd_expected = Matrix<double>(2, 3, {-2.31, 1.1, 0.0, -2.1, -1.31, -10.5});
+    auto a_plus_b_expected = Matrix<double>(2, 2, {0.0, 2.2, -1.0, 0.0});
 
     printf("Addition:\n");
     ASSERT_ERROR(a + c)
@@ -345,7 +371,6 @@ void matrixTests() {
     }
 
     printf("Transpose:\n");
-
     auto d_tt = d.transpose().transpose();
     CUSTOM_ASSERT(((a + b)[{1, 0}] == -1.0))
 
