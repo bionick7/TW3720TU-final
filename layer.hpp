@@ -11,6 +11,7 @@ public:
 
     // Virtual forward
     virtual Matrix<T> forward(const Matrix<T>& x) = 0;
+
     // Virtual backward
     virtual Matrix<T> backward(const Matrix<T>& dy) = 0;
 };
@@ -43,22 +44,22 @@ public:
         // initialize matrices
         cache = Matrix<T>(n_samples, in_features);
         
-        bias = Matrix<T>(1, out_features);
+        this->bias = Matrix<T>(1, out_features);
         
         for (int j=0; j<out_features; ++j) {
                 bias[{0,j}] = distribution_uniform(generator);
         }
                 
-        weights = Matrix<T>(in_features, out_features);
+                this->weights = Matrix<T>(in_features, out_features);
                 
         for (int i=0; i<in_features; ++i) {
             for (int j=0; j<out_features; ++j) {
-                weights[{i,j}] = distribution_normal(generator);
+                this->weights[{i,j}] = distribution_normal(generator);
             }
         }    
         
-        bias_gradients = Matrix<T>(1, out_features);
-        weights_gradients = Matrix<T>(in_features, out_features);
+        this->bias_gradients = Matrix<T>(1, out_features);
+        this->weights_gradients = Matrix<T>(in_features, out_features);
         
     };
     
@@ -71,19 +72,27 @@ public:
         cache = x;
         
         // Return result
-        return x*weights+bias;
+        return x*this->weights+this->bias;
     };
     
     virtual Matrix<T> backward(const Matrix<T>& dy) override final {
         // Return result
-        return dy*weights.transpose();
+        return dy*this->weights.transpose();
     };
     
     void optimize(T learning_rate) {
         // Update weights and bias
-        weights -= weights_gradients*learning_rate;
-        bias -= bias_gradients*learning_rate;
+        this->weights = this->weights - this->weights_gradients*learning_rate;
+        this->bias = this->bias - this->bias_gradients*learning_rate;
     };
+
+    void printWeights(bool printData = false) const {
+        std::cout << "Weights:\n";
+        weights.inspect(printData);
+        std::cout << "\nBias:\n";
+        bias.inspect(printData);
+        std::cout << std::endl;
+    }
     
 };
 
