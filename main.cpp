@@ -18,8 +18,6 @@ Matrix<T> MSEgrad(const Matrix<T>& y_true, const Matrix<T>& y_pred) {
     return gradient;
 };
 
-
-
 // Calculate the argmax 
 template <typename T>
 Matrix<T> argmax(const Matrix<T>& y) 
@@ -34,6 +32,7 @@ T get_accuracy(const Matrix<T>& y_true, const Matrix<T>& y_pred)
 {
     // Your implementation of the get_accuracy starts here
 }
+
 
 
 // Training loop
@@ -88,7 +87,7 @@ void training(bool use_test_and_debug) {
 int main(int argc, char* argv[])
 {
     // debug variables
-    bool use_test_and_debug = true;
+    bool use_test_and_debug = false;
 
     try {
         // individual unit tests
