@@ -76,6 +76,10 @@ public:
     };
     
     virtual Matrix<T> backward(const Matrix<T>& dy) override final {
+        // Compute gradients during backward pass
+        this->weights_gradients = this->cache.transpose() * dy;
+        this->bias_gradients = dy.sumRows();
+
         // Return result
         return dy*this->weights.transpose();
     };
@@ -155,13 +159,18 @@ public:
 
 void layerTests()
 {
-    ReLU<double> test = ReLU<double>(2, 2, 4);
-    
-    
-    std::initializer_list<double> t_list = {-1.0,0.0,0.0,1.0,1.0,0.0,1.0,1.0};
-    Matrix<double> x_test = Matrix<double>(4, 2, t_list);
-    
-    // std::cout << test.bias[{0,0}] << std::endl;
-    
-    std::cout << test.forward(x_test)[{1,0}] << std::endl;
+    // Initialize Linear layer for testing
+    Linear<double> linearTest(2, 2, 4, 1);
+
+    // Print weights and biases before optimize
+    std::cout << "Weights before optimize:\n";
+    linearTest.printWeights(true);
+
+    // Test the optimize function
+    double learning_rate = 0.005;
+    linearTest.optimize(learning_rate);
+
+    std::cout << "\nWeights after optimize:\n";
+    linearTest.printWeights(true);
+
 }

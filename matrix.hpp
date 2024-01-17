@@ -200,6 +200,23 @@ public:
         return result;
     }
 
+    // Modify the sumRows method
+    template<typename U = T>
+    Matrix<typename std::common_type<T,U>::type> sumRows() const {
+        auto result = Matrix<typename std::common_type<T,U>::type>(1, columns);
+
+        for (int j = 0; j < columns; ++j) {
+            typename std::common_type<T,U>::type sum = 0;
+            for (int i = 0; i < rows; ++i) {
+                sum += elements[i * columns + j];
+            }
+            result[{0, j}] = sum;
+        }
+        
+        return result;
+    }
+
+
     // Debugging methods -- not asked for, but usefull
     void inspect(bool printData = false) const {
         if (rows * columns == 0) {
