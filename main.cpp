@@ -20,19 +20,48 @@ Matrix<T> MSEgrad(const Matrix<T>& y_true, const Matrix<T>& y_pred) {
 
 // Calculate the argmax 
 template <typename T>
-Matrix<T> argmax(const Matrix<T>& y) 
-{
-    // Your implementation of the argmax function starts here
+Matrix<T> argmax(const Matrix<T>& y) {
+    int rows = y.getRows();
+    int cols = y.getCols();
+
+    Matrix<T> result(1, cols);
+
+    for (int j = 0; j < cols; ++j) {
+        T max_val = y[{0, j}];
+        int max_index = 0;
+
+        for (int i = 1; i < rows; ++i) {
+            if (y[{i, j}] > max_val) {
+                max_val = y[{i, j}];
+                max_index = i;
+            }
+        }
+
+        result[{0, j}] = max_index;
+    }
+
+    return result;
 }
 
 // Calculate the accuracy of the prediction, using the argmax
 template <typename T>
+T get_accuracy(const Matrix<T>& y_true, const Matrix<T>& y_pred) {
+    int cols = y_true.getCols();
+    int correct_count = 0;
 
-T get_accuracy(const Matrix<T>& y_true, const Matrix<T>& y_pred)
-{
-    // Your implementation of the get_accuracy starts here
+    Matrix<T> y_true_argmax = argmax(y_true);
+    Matrix<T> y_pred_argmax = argmax(y_pred);
+
+    // Compare the indices to calculate accuracy
+    for (int j = 0; j < cols; ++j) {
+        if (y_true_argmax[{0, j}] == y_pred_argmax[{0, j}]) {
+            correct_count++;
+        }
+    }
+
+    T accuracy = static_cast<T>(correct_count) / cols;
+    return accuracy;
 }
-
 
 
 // Training loop
@@ -71,7 +100,9 @@ void training(bool use_test_and_debug) {
         net.backward(gradient);
         net.optimize(learning_rate);
 
-        std::cout << "Step " << step << ", Loss: " << loss << std::endl;
+        double accuracy = get_accuracy(y_xor, predictions);
+
+        std::cout << "Step " << step << ", Loss: " << loss << ", Accuracy: " << accuracy << std::endl;
 
         if (use_test_and_debug){
             std::cout << "Linear layer 1: " << std::endl;
